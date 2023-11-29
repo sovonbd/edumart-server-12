@@ -30,6 +30,8 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("edumart").collection("users");
+    const instructorCollection = client.db("edumart").collection("instructors");
+    const sponsorCollection = client.db("edumart").collection("sponsors");
 
     // jwt related api
 
@@ -39,6 +41,13 @@ async function run() {
         expiresIn: "1h",
       });
       res.send({ token });
+    });
+
+    // sponsors related api
+
+    app.get("/sponsors", async (req, res) => {
+      const result = await sponsorCollection.find().toArray();
+      res.send(result);
     });
 
     // user related api
@@ -51,6 +60,15 @@ async function run() {
         return res.send({ message: "user already exists", insertedId: null });
       }
       const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // instructors related api
+
+    app.post("/instructors", async (req, res) => {
+      const instructor = req.body;
+      console.log(instructor);
+      const result = await instructorCollection.insertOne(instructor);
       res.send(result);
     });
 
