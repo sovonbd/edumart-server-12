@@ -32,6 +32,10 @@ async function run() {
     const userCollection = client.db("edumart").collection("users");
     const instructorCollection = client.db("edumart").collection("instructors");
     const sponsorCollection = client.db("edumart").collection("sponsors");
+    const courseCollection = client.db("edumart").collection("courses");
+    const paymentCollection = client.db("edumart").collection("payments");
+    const quoteCollection = client.db("edumart").collection("quotes");
+    const reviewCollection = client.db("edumart").collection("reviews");
 
     // jwt related api
 
@@ -69,6 +73,50 @@ async function run() {
       const instructor = req.body;
       console.log(instructor);
       const result = await instructorCollection.insertOne(instructor);
+      res.send(result);
+    });
+
+    // course related api
+
+    app.get("/courses", async (req, res) => {
+      const result = await courseCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/courses/:id", async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await courseCollection.findOne(query);
+      res.send(result);
+    });
+
+    // payment related api
+
+    app.get("/payments/:id", async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const query = { courseId: id };
+      const result = await paymentCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      // console.log(payment);
+      const result = await paymentCollection.insertOne(payment);
+      res.send(result);
+    });
+
+    // quotes related api
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
+
+    // quotes related api
+    app.get("/quotes", async (req, res) => {
+      const result = await quoteCollection.find().toArray();
       res.send(result);
     });
 
