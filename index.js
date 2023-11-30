@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 // const jwtSecret = process.env.ACCESS_TOKEN_SECRET;
 
 app.use(cors());
@@ -92,6 +93,24 @@ async function run() {
     });
 
     // payment related api
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      if (!price || isNaN(price)) {
+        return res.status(400).send({ error: "Invalid price" });
+      }
+
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "cad",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     app.get("/payments/:id", async (req, res) => {
       const id = req.params.id;
