@@ -48,6 +48,35 @@ async function run() {
       res.send({ token });
     });
 
+    // middlewares
+
+    const verifyToken = (req, res, next) => {
+      // console.log(req.headers);
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+      const token = req.headers.authorization.split(" ")[1];
+      // console.log(token);
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: "unauthorized access" });
+        }
+        req.decoded = decoded;
+      });
+      next();
+    };
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     // sponsors related api
 
     app.get("/sponsors", async (req, res) => {
@@ -56,6 +85,34 @@ async function run() {
     });
 
     // user related api
+
+    app.get("/users/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      // console.log(email);
+
+      // Check if the decoded email matches the request email
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      // Use the decoded email to query the user collection
+      const query = { email: req.decoded.email };
+      const user = await userCollection.findOne(query);
+
+      // Check if the user exists and has the role of an admin
+      if (user && user.role === "admin") {
+        res.send({ admin: true });
+      } else {
+        res.send({ admin: false });
+      }
+    });
 
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -68,7 +125,54 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/users/:instructor", async (req, res) => {
+      const instructorName = req.params.instructor;
+      console.log(instructorName);
+      const filter = { name: instructorName };
+      const updateDoc = {
+        $set: {
+          role: "Teacher",
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, {
+        upsert: false,
+      });
+      res.send({ result, instructorName });
+    });
+
     // instructors related api
+    app.get("/instructors", async (req, res) => {
+      const result = await instructorCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/instructors/:name", async (req, res) => {
+      const name = req.params.name;
+      console.log(name);
+      const query = { instructor: name };
+      const result = await instructorCollection.findOne(query);
+
+      if (!result) {
+        // Email exists in the collection
+        return res.send({ message: false });
+      } else {
+        // Email does not exist in the collection
+        res.send({ message: true });
+      }
+    });
+
+    app.patch("/instructors/:name", async (req, res) => {
+      const name = req.params.name;
+      console.log(name);
+      const filter = { instructor: name };
+      const updateDoc = {
+        $set: {
+          status: "Accepted",
+        },
+      };
+      const result = await instructorCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     app.post("/instructors", async (req, res) => {
       const instructor = req.body;
@@ -94,6 +198,14 @@ async function run() {
 
     // payment related api
 
+    app.get("/payments/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const query = { learnerEmail: email };
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       if (!price || isNaN(price)) {
@@ -110,14 +222,6 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
-    });
-
-    app.get("/payments/:id", async (req, res) => {
-      const id = req.params.id;
-      // console.log(id);
-      const query = { courseId: id };
-      const result = await paymentCollection.findOne(query);
-      res.send(result);
     });
 
     app.post("/payments", async (req, res) => {
