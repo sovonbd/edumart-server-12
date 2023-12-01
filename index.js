@@ -86,6 +86,11 @@ async function run() {
 
     // user related api
 
+    app.get("/users", verifyToken, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
     app.get("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
@@ -127,17 +132,18 @@ async function run() {
 
     app.patch("/users/:instructor", async (req, res) => {
       const instructorName = req.params.instructor;
-      console.log(instructorName);
+      const body = req.body;
+      console.log(instructorName, body);
       const filter = { name: instructorName };
       const updateDoc = {
         $set: {
-          role: "Teacher",
+          role: body.role,
         },
       };
       const result = await userCollection.updateOne(filter, updateDoc, {
         upsert: false,
       });
-      res.send({ result, instructorName });
+      res.send({ result, name: instructorName });
     });
 
     // instructors related api
@@ -151,27 +157,21 @@ async function run() {
       console.log(name);
       const query = { instructor: name };
       const result = await instructorCollection.findOne(query);
-
-      if (!result) {
-        // Email exists in the collection
-        return res.send({ message: false });
-      } else {
-        // Email does not exist in the collection
-        res.send({ message: true });
-      }
+      res.send(result);
     });
 
     app.patch("/instructors/:name", async (req, res) => {
       const name = req.params.name;
-      console.log(name);
+      const body = req.body;
+      // console.log(name, body);
       const filter = { instructor: name };
       const updateDoc = {
         $set: {
-          status: "Accepted",
+          status: body.status,
         },
       };
       const result = await instructorCollection.updateOne(filter, updateDoc);
-      res.send(result);
+      res.send({ result, name });
     });
 
     app.post("/instructors", async (req, res) => {
