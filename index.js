@@ -196,11 +196,51 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/courses/user/:email", async (req, res) => {
+      const email = req.params.email;
+      // console.log(email);
+      const query = { email: email };
+      const result = await courseCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/courses", async (req, res) => {
+      const course = req.body;
+      // console.log(typeof course.price);
+      const result = await courseCollection.insertOne(course);
+      res.send(result);
+    });
+
+    app.patch("/courses/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedCourse = req.body;
+      // console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          title: updatedCourse.title,
+          price: updatedCourse.price,
+          description: updatedCourse.description,
+          image: updatedCourse.image,
+        },
+      };
+      const result = await courseCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    app.delete("/courses/:id", async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await courseCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // payment related api
 
     app.get("/payments/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+      // console.log(email);
       const query = { learnerEmail: email };
       const result = await paymentCollection.find(query).toArray();
       res.send(result);
