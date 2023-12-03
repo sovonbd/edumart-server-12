@@ -35,6 +35,7 @@ async function run() {
     const sponsorCollection = client.db("edumart").collection("sponsors");
     const courseCollection = client.db("edumart").collection("courses");
     const paymentCollection = client.db("edumart").collection("payments");
+    const assignmentCollection = client.db("edumart").collection("assignments");
     const quoteCollection = client.db("edumart").collection("quotes");
     const reviewCollection = client.db("edumart").collection("reviews");
 
@@ -67,7 +68,8 @@ async function run() {
     };
 
     const verifyAdmin = async (req, res, next) => {
-      const email = req.decoded.email;
+      const email = req?.decoded?.email;
+      console.log("verify admin", email);
       const query = { email: email };
       const user = await userCollection.findOne(query);
       const isAdmin = user?.role === "admin";
@@ -184,8 +186,10 @@ async function run() {
     // course related api
 
     app.get("/courses", async (req, res) => {
-      const result = await courseCollection.find().toArray();
-      res.send(result);
+      const query = { status: "Accepted" };
+      const result = await courseCollection.find(query).toArray();
+      const resultAll = await courseCollection.find().toArray();
+      res.send({ result, resultAll });
     });
 
     app.get("/courses/:id", async (req, res) => {
@@ -214,14 +218,28 @@ async function run() {
     app.patch("/courses/:id", async (req, res) => {
       const id = req.params.id;
       const updatedCourse = req.body;
-      // console.log(id);
+      console.log(id, updatedCourse);
+      const existingCourse = await courseCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      const currentNumOfTotalEnrollment =
+        existingCourse.numOfTotalEnrollment || 0;
+
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          title: updatedCourse.title,
-          price: updatedCourse.price,
-          description: updatedCourse.description,
-          image: updatedCourse.image,
+          ...(updatedCourse.title && { title: updatedCourse.title }),
+          ...(updatedCourse.price && { price: updatedCourse.price }),
+          ...(updatedCourse.description && {
+            description: updatedCourse.description,
+          }),
+          ...(updatedCourse.image && { image: updatedCourse.image }),
+          ...(updatedCourse.status && { status: updatedCourse.status }),
+          ...(updatedCourse.numOfTotalEnrollment && {
+            numOfTotalEnrollment:
+              currentNumOfTotalEnrollment + updatedCourse.numOfTotalEnrollment,
+          }),
         },
       };
       const result = await courseCollection.updateOne(filter, updateDoc);
@@ -235,6 +253,30 @@ async function run() {
       const result = await courseCollection.deleteOne(query);
       res.send(result);
     });
+
+    // assignments related api
+
+    app.get("/assignments/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { courseId: id };
+      const result = await assignmentCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/assignments", async (req, res) => {
+      const body = req.body;
+      console.log("Incoming request body:", body);
+      const result = await assignmentCollection.insertOne(body);
+      res.send(result);
+    });
+
+    // stats related api
+
+    // app.get('/courseStats/:id', async(req, res)=>{
+    //   const totalAssignments = await assignmentCollection.estimatedDocumentCount();
+    //   const courseId = req.params.id;
+
+    // })
 
     // payment related api
 
