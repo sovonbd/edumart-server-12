@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const userCollection = client.db("edumart").collection("users");
     const instructorCollection = client.db("edumart").collection("instructors");
@@ -285,35 +285,6 @@ async function run() {
       res.send({ result, result1 });
     });
 
-    // app.get("/assignments/:assignmentName", async (req, res) => {
-    //   const assignmentName = req.params.assignmentName;
-    //   console.log(assignmentName);
-    //   const today = new Date();
-    //   const startToday = startOfToday(today);
-    //   const endToday = endOfDay(today);
-    //   const query = { _id: new ObjectId(assignmentId) };
-
-    //   const filter = {
-    //     _id: new ObjectId(assignmentId),
-    //     submitted: {
-    //       $gte: startToday,
-    //       $lte: endToday,
-    //     },
-    //   };
-
-    //   const result = await assignmentCollection.countDocuments(filter);
-
-    //   // const updateDoc = {
-    //   //   $set: {
-    //   //     submittedToday: countSubmittedToday,
-    //   //   },
-    //   // };
-
-    //   // console.log(countSubmittedToday);
-    //   // const result = await assignmentCollection.updateOne(query, updateDoc);
-    //   res.send(result);
-    // });
-
     app.post("/assignments", async (req, res) => {
       const body = req.body;
       console.log("Incoming request body:", body);
@@ -439,36 +410,36 @@ async function run() {
 
     // search api
 
-    app.get("/courses/:search", async (req, res) => {
-      try {
-        const search = req.params.search;
+    // app.get("/courses/:search", async (req, res) => {
+    //   try {
+    //     const search = req.params.search;
 
-        console.log(title);
+    //     console.log(title);
 
-        // Check if the 'title' query parameter is provided
-        if (!title || typeof title !== "string") {
-          return res.status(400).json({ error: "Invalid search query" });
-        }
+    //     // Check if the 'title' query parameter is provided
+    //     if (!title || typeof title !== "string") {
+    //       return res.status(400).json({ error: "Invalid search query" });
+    //     }
 
-        // Case-insensitive search using a regular expression
-        const searchRegex = new RegExp(title, "i");
+    //     // Case-insensitive search using a regular expression
+    //     const searchRegex = new RegExp(title, "i");
 
-        // Search for courses by title
-        const matchedCourses = await courseCollection
-          .find({ title: { $regex: searchRegex } })
-          .toArray();
+    //     // Search for courses by title
+    //     const matchedCourses = await courseCollection
+    //       .find({ title: { $regex: searchRegex } })
+    //       .toArray();
 
-        console.log(matchedCourses);
+    //     console.log(matchedCourses);
 
-        res.send({ results: matchedCourses });
-      } catch (error) {
-        console.error("Error searching courses:", error);
-        res.status(500).json({ error: "Error searching courses" });
-      }
-    });
+    //     res.send({ results: matchedCourses });
+    //   } catch (error) {
+    //     console.error("Error searching courses:", error);
+    //     res.status(500).json({ error: "Error searching courses" });
+    //   }
+    // });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
