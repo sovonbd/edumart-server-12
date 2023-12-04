@@ -3,6 +3,7 @@ require("dotenv").config();
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const { startOfToday, endOfDay } = require("date-fns");
 // const cookieParser = require("cookie-parser");
 
 const app = express();
@@ -258,10 +259,60 @@ async function run() {
 
     app.get("/assignments/:id", async (req, res) => {
       const id = req.params.id;
+      // console.log(id);
       const query = { courseId: id };
+
+      const totalAssignmentSubmitted = await assignmentCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalSubmitted: {
+                $sum: "$submitted",
+              },
+            },
+          },
+        ])
+        .toArray();
+      const result1 =
+        totalAssignmentSubmitted.length > 0
+          ? totalAssignmentSubmitted[0].totalSubmitted
+          : 0;
+
+      console.log(result1);
+
       const result = await assignmentCollection.find(query).toArray();
-      res.send(result);
+      res.send({ result, result1 });
     });
+
+    // app.get("/assignments/:assignmentName", async (req, res) => {
+    //   const assignmentName = req.params.assignmentName;
+    //   console.log(assignmentName);
+    //   const today = new Date();
+    //   const startToday = startOfToday(today);
+    //   const endToday = endOfDay(today);
+    //   const query = { _id: new ObjectId(assignmentId) };
+
+    //   const filter = {
+    //     _id: new ObjectId(assignmentId),
+    //     submitted: {
+    //       $gte: startToday,
+    //       $lte: endToday,
+    //     },
+    //   };
+
+    //   const result = await assignmentCollection.countDocuments(filter);
+
+    //   // const updateDoc = {
+    //   //   $set: {
+    //   //     submittedToday: countSubmittedToday,
+    //   //   },
+    //   // };
+
+    //   // console.log(countSubmittedToday);
+    //   // const result = await assignmentCollection.updateOne(query, updateDoc);
+    //   res.send(result);
+    // });
 
     app.post("/assignments", async (req, res) => {
       const body = req.body;
@@ -270,13 +321,60 @@ async function run() {
       res.send(result);
     });
 
+    app.patch("/assignments/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedAssignment = req.body;
+      console.log(id, updatedAssignment.submitted);
+      const existingAssignment = await assignmentCollection.findOne({
+        _id: new ObjectId(id),
+      });
+
+      // console.log(existingAssignment);
+
+      let existingAssignmentSubmitted = 0;
+      if (existingAssignment && existingAssignment.submitted !== undefined) {
+        existingAssignmentSubmitted = existingAssignment.submitted;
+      }
+
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          submitted:
+            (existingAssignmentSubmitted || 0) +
+            (updatedAssignment.submitted || 0),
+        },
+      };
+      console.log(existingAssignmentSubmitted);
+
+      const result = await assignmentCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     // stats related api
 
-    // app.get('/courseStats/:id', async(req, res)=>{
-    //   const totalAssignments = await assignmentCollection.estimatedDocumentCount();
-    //   const courseId = req.params.id;
+    app.get("/stats", async (req, res) => {
+      const totalUsers = await userCollection.estimatedDocumentCount();
+      const totalCourses = await courseCollection.estimatedDocumentCount();
+      const allUsers = await userCollection.find().toArray();
 
-    // })
+      // Filter the courses to count learners and teachers
+      const totalLearners = allUsers.filter(
+        (course) => course.role !== "admin" && course.role !== "Teacher"
+      ).length;
+
+      const totalTeachers = allUsers.filter(
+        (course) => course.role === "Teacher"
+      ).length;
+
+      console.log(totalUsers, totalCourses, totalLearners, totalTeachers);
+
+      res.send({
+        totalUsers,
+        totalCourses,
+        totalLearners,
+        totalTeachers,
+      });
+    });
 
     // payment related api
 
@@ -319,10 +417,54 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { courseId: id };
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/reviews", async (req, res) => {
+      const body = req.body;
+      console.log(body);
+      const result = await reviewCollection.insertOne(body);
+      res.send(result);
+    });
+
     // quotes related api
     app.get("/quotes", async (req, res) => {
       const result = await quoteCollection.find().toArray();
       res.send(result);
+    });
+
+    // search api
+
+    app.get("/courses/:search", async (req, res) => {
+      try {
+        const search = req.params.search;
+
+        console.log(title);
+
+        // Check if the 'title' query parameter is provided
+        if (!title || typeof title !== "string") {
+          return res.status(400).json({ error: "Invalid search query" });
+        }
+
+        // Case-insensitive search using a regular expression
+        const searchRegex = new RegExp(title, "i");
+
+        // Search for courses by title
+        const matchedCourses = await courseCollection
+          .find({ title: { $regex: searchRegex } })
+          .toArray();
+
+        console.log(matchedCourses);
+
+        res.send({ results: matchedCourses });
+      } catch (error) {
+        console.error("Error searching courses:", error);
+        res.status(500).json({ error: "Error searching courses" });
+      }
     });
 
     // Send a ping to confirm a successful connection
