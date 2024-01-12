@@ -188,9 +188,26 @@ async function run() {
 
     app.get("/courses", async (req, res) => {
       const query = { status: "Accepted" };
+      // console.log(req.query);
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
       const result = await courseCollection.find(query).toArray();
-      const resultAll = await courseCollection.find().toArray();
+      let resultAll;
+      if (page === 1) {
+        resultAll = await courseCollection.find().limit(size).toArray();
+      } else {
+        resultAll = await courseCollection
+          .find()
+          .skip((page - 1) * size)
+          .limit(size)
+          .toArray();
+      }
       res.send({ result, resultAll });
+    });
+
+    app.get("/totalCourses", async (req, res) => {
+      const count = await courseCollection.estimatedDocumentCount();
+      res.send({ count });
     });
 
     app.get("/courses/:id", async (req, res) => {
