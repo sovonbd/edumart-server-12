@@ -157,7 +157,7 @@ async function run() {
 
     app.get("/instructors/:name", async (req, res) => {
       const name = req.params.name;
-      console.log(name);
+      // console.log(name);
       const query = { instructor: name };
       const result = await instructorCollection.findOne(query);
       res.send(result);
@@ -170,10 +170,10 @@ async function run() {
       const filter = { instructor: name };
       const updateDoc = {
         $set: {
-          status: body.status,
+          ...(body.status && { status: body.status }),
         },
       };
-      const result = await instructorCollection.updateOne(filter, updateDoc);
+      const result = await instructorCollection.updateMany(filter, updateDoc);
       res.send({ result, name });
     });
 
@@ -354,7 +354,7 @@ async function run() {
         (course) => course.role === "Teacher"
       ).length;
 
-      console.log(totalUsers, totalCourses, totalLearners, totalTeachers);
+      // console.log(totalUsers, totalCourses, totalLearners, totalTeachers);
 
       res.send({
         totalUsers,
