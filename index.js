@@ -136,7 +136,7 @@ async function run() {
     app.patch("/users/:instructor", async (req, res) => {
       const instructorName = req.params.instructor;
       const body = req.body;
-      console.log(instructorName, body);
+      // console.log(instructorName, body);
       const filter = { name: instructorName };
       const updateDoc = {
         $set: {
@@ -150,12 +150,12 @@ async function run() {
     });
 
     // instructors related api
-    app.get("/instructors", async (req, res) => {
+    app.get("/instructors", verifyToken, verifyAdmin, async (req, res) => {
       const result = await instructorCollection.find().toArray();
       res.send(result);
     });
 
-    app.get("/instructors/:name", async (req, res) => {
+    app.get("/instructors/:name", verifyToken, async (req, res) => {
       const name = req.params.name;
       // console.log(name);
       const query = { instructor: name };
@@ -218,7 +218,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/courses/user/:email", async (req, res) => {
+    app.get("/courses/user/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       // console.log(email);
       const query = { email: email };
@@ -274,7 +274,7 @@ async function run() {
 
     // assignments related api
 
-    app.get("/assignments/:id", async (req, res) => {
+    app.get("/assignments/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       // console.log(id);
       const query = { courseId: id };
@@ -366,7 +366,7 @@ async function run() {
 
     // payment related api
 
-    app.get("/payments/:email", async (req, res) => {
+    app.get("/payments/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       // console.log(email);
       const query = { learnerEmail: email };
@@ -414,7 +414,7 @@ async function run() {
 
     app.post("/reviews", async (req, res) => {
       const body = req.body;
-      console.log(body);
+      // console.log(body);
       const result = await reviewCollection.insertOne(body);
       res.send(result);
     });
